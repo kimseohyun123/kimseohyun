@@ -1,1 +1,152 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>잠깐쉼</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #eef3f8; color: #172944;
+      font: 17px/1.5 system-ui, sans-serif; }
+    main { max-width: 460px; margin: 28px auto; padding: 22px; }
+    section { background: white; padding: 24px; border-radius: 20px; }
+    h1, h2 { margin: 0 0 12px; }
+    label { display: block; margin: 14px 0; }
+    button, select { font: inherit; border-radius: 10px; padding: 10px 14px; }
+    button { border: 0; background: #1855ad; color: white; cursor: pointer;
+      margin: 5px 3px 5px 0; }
+    button:disabled { background: #d5dce6; color: #485569; cursor: default; }
+    select { border: 1px solid #8997aa; }
+    #scene { background: linear-gradient(155deg, #137ab2, #115744);
+      color: white; border-radius: 14px; padding: 28px 16px; text-align: center; }
+    #art { font-size: 48px; }
+    #picture { transition: filter .25s; }
+    #picture.near { filter: blur(6px); }
+    #scene.ended { filter: grayscale(1); }
+    #notice { min-height: 3em; font-weight: 700; }
+    fieldset { border: 1px solid #bcc9d7; border-radius: 12px; margin: 16px 0; }
+    legend { padding: 0 6px; }
+  </style>
+</head>
+<body>
+<main>
+  <h1>잠깐쉼</h1>
 
+  <section id="home">
+    <h2>누가 사용하나요?</h2>
+    <button id="parentBtn">부모 모드</button>
+    <button id="childBtn">아이 모드</button>
+  </section>
+
+  <section id="parent" hidden>
+    <h2>앱별 사용 시간</h2>
+    <label>영상
+      <select id="videoLimit"><option>10</option><option selected>20</option><option>30</option></select> 분
+    </label>
+    <label>게임
+      <select id="gameLimit"><option>10</option><option selected>20</option><option>30</option></select> 분
+    </label>
+    <button id="saveBtn">저장하고 아이 모드로</button>
+  </section>
+
+  <section id="child" hidden>
+    <h2>오늘 사용할 앱</h2>
+    <button id="videoBtn"></button>
+    <button id="gameBtn"></button>
+    <p><button class="homeBtn">첫 화면으로</button></p>
+  </section>
+
+  <section id="viewer" hidden>
+    <h2 id="appTitle"></h2>
+    <p id="time"></p>
+    <div id="scene">
+      <div id="picture"><div id="art"></div><strong id="caption"></strong></div>
+    </div>
+    <p id="notice" role="status"></p>
+    <fieldset>
+      <legend>발표자용 시연 조작</legend>
+      <button id="nearBtn">가까이 보기</button>
+      <button id="farBtn">거리 회복</button>
+      <button id="minuteBtn">종료 1분 전</button>
+      <button id="endBtn">시간 종료</button>
+    </fieldset>
+    <button id="backBtn">아이 홈으로</button>
+    <button class="homeBtn">첫 화면으로</button>
+  </section>
+</main>
+
+<script>
+  const get = id => document.getElementById(id);
+  const apps = {
+    video: { name: '영상', art: '🏟️ ⚽ 🥅', title: '오늘의 축구 하이라이트' },
+    game: { name: '게임', art: '🌲 🦊 🌻', title: '숲속 여우의 모험' }
+  };
+  const limits = { video: 20, game: 20 };
+  let activeApp = 'video';
+
+  function show(page) {
+    for (const section of document.querySelectorAll('main > section')) {
+      section.hidden = section.id !== page;
+    }
+  }
+
+  function openChild() {
+    for (const [key, app] of Object.entries(apps)) {
+      get(key + 'Btn').textContent = `${app.name} · ${limits[key]}분`;
+    }
+    show('child');
+  }
+
+  function openApp(key) {
+    activeApp = key;
+    const app = apps[key];
+    get('appTitle').textContent = app.name;
+    get('art').textContent = app.art;
+    get('caption').textContent = app.title;
+    get('time').textContent = `사용 가능 시간 ${limits[key]}분`;
+    get('notice').textContent = '';
+    get('picture').classList.remove('near');
+    get('scene').classList.remove('ended');
+    for (const button of document.querySelectorAll('fieldset button')) {
+      button.disabled = false;
+    }
+    show('viewer');
+  }
+
+  get('parentBtn').onclick = () => show('parent');
+  get('childBtn').onclick = openChild;
+  get('saveBtn').onclick = () => {
+    limits.video = Number(get('videoLimit').value);
+    limits.game = Number(get('gameLimit').value);
+    openChild();
+  };
+  get('videoBtn').onclick = () => openApp('video');
+  get('gameBtn').onclick = () => openApp('game');
+  get('nearBtn').onclick = () => {
+    get('picture').classList.add('near');
+    get('notice').textContent = '화면을 조금 멀리해 볼까?';
+  };
+  get('farBtn').onclick = () => {
+    get('picture').classList.remove('near');
+    get('notice').textContent = '좋아! 이 거리로 보자.';
+  };
+  get('minuteBtn').onclick = () => {
+    get('time').textContent = '남은 시간 1분';
+    get('notice').textContent = '1분 뒤에 쉬는 시간이야.';
+  };
+  get('endBtn').onclick = () => {
+    get('picture').classList.remove('near');
+    get('scene').classList.add('ended');
+    get('time').textContent = '남은 시간 0분';
+    get('notice').textContent = `오늘의 ${apps[activeApp].name} 시간이 끝났어.`;
+    for (const button of document.querySelectorAll('fieldset button')) {
+      button.disabled = true;
+    }
+  };
+  get('backBtn').onclick = openChild;
+  for (const button of document.querySelectorAll('.homeBtn')) {
+    button.onclick = () => show('home');
+  }
+</script>
+</body>
+</html>
